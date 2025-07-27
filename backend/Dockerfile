@@ -1,5 +1,10 @@
 FROM python:3.13.4-slim-bullseye
 
+
+# host.docker.internal --> localhost
+# curl -X POST -d '{"message": "hello world"}' -H "Content-Type: application/json"
+RUN apt-get update && apt-get install -y curl 
+
 # Create python virtual env
 # isolate our python app and installs from system-level python
 RUN python -m venv /opt/venv/
