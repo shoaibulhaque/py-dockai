@@ -1,1 +1,32 @@
+# Environment files - NEVER commit these!
+.env
+.env.*
+!.env.sample
+!.env.*.sample
+
+# Database
+*.db
+*.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Notes (if you want to keep them private)
 notes.md

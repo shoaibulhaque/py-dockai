@@ -9,27 +9,39 @@ services: # docker compose expects
     environment:
       - PORT=8000
     env_file:
-      - .env.sample
+      - .env
     volumes:
-      - ./backend/src:/app # volumes dont care about the dockerignore it just mounts the entire volume in the docker container ( and its two-way sync - i.e. reflect changes from local to the container and vice versa )
+      - ./backend/src:/app
+    depends_on:
+      - db_service # Wait for database to start first
     develop:
       watch:
         - action: rebuild
           path: backend/requirements.txt
         - action: rebuild
           path: backend/Dockerfile
-        # - action: sync
-        - action: restart # sync cares about docker ignore and its one way sync ( will watch reflect changes from local to the container )
+        - action: restart
           path: backend/src/
-          # target: /app
 
-  static_html: # custom key name
-    build:
-      context: ./static_html
-      dockerfile: static.Dockerfile
+  db_service:
+    image: postgres:17.5
     ports:
-      - 8000:8000
-      - 3000:8000
-    command: python -m http.server 8000
+      - 5432:5432
+    env_file:
+      - .env.database
     volumes:
-      - ./static_html/src:/app
+      - dc_managed_db_volume:/var/lib/postgresql/data
+
+  # static_html: # custom key name
+  #   build:
+  #     context: ./static_html
+  #     dockerfile: static.Dockerfile
+  #   ports:
+  #     - 8000:8000
+  #     - 3000:8000
+  #   command: python -m http.server 8000
+  #   volumes:
+  #     - ./static_html/src:/app
+
+volumes:
+  dc_managed_db_volume:
