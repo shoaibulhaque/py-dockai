@@ -1,12 +1,15 @@
 from typing import List
-from fastapi import APIRouter, Depends
+import uuid
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
+from langgraph.checkpoint.memory import MemoryCheckpointSaver
 from api.db import get_session
-from api.ai.services import generate_email_message
-from api.ai.schemas import EmailMessageSchema
+from api.ai.agents import get_supervisor
+from api.ai.schemas import SupervisorMessageSchema
 from .models import ChatMessagePayLoad, ChatMessage, ChatMessageListItem
 
 router = APIRouter()
+checkpointer = MemoryCheckpointSaver()
 
 
 # /api/chat/
@@ -27,18 +30,25 @@ def chat_list_messages(session: Session = Depends(get_session)):
 
 # HTTP POST ==> {"message": "Hello, World!"} ==> {"message": "Hello World", "id": 1}
 # curl -X POST -d '{"message": "Hello, world"}' -H "Content-Type: application/json" http://localhost:8080/api/chats/
-@router.post("/", response_model=EmailMessageSchema)
+@router.post("/", response_model=SupervisorMessageSchema)
 def chat_create_message(
     payload: ChatMessagePayLoad, session: Session = Depends(get_session)
 ):
-
-    data = payload.model_dump()  # pydantic --> dict
-    print(data)
+    data = payload.model_dump()  # pydantic -> dict
     obj = ChatMessage.model_validate(data)
     session.add(obj)
     session.commit()
-    # session.refresh(obj)  # ensure id/primary key added to the object instance
-    # ready to store in the db
-    response = generate_email_message(payload.message)
-
-    return response
+    thread_id = uuid.uuid4()
+    supe = get_supervisor(checkpointer=checkpointer)
+    msg_data = {
+        "messages": [
+            {"role": "user", "content": f"{payload.message}"},
+        ]
+    }
+    result = supe.invoke(msg_data, {"configurable": {"thread_id": thread_id}})
+    if not result:
+        raise HTTPException(status_code=400, detail="Error with supervisor")
+    messages = result.get("messages")
+    if not messages:
+        raise HTTPException(status_code=400, detail="Error with supervisor")
+    return messages[-1]

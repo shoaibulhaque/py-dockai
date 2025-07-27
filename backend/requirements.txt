@@ -3,5 +3,10 @@ uvicorn[standard]
 requests
 sqlmodel # sqlite mysql postgres
 psycopg[binary]
+langgraph
+langgraph-supervisor
 langchain
 langchain-openai
+langchain-google-genai
+langchain-core
+langsmith  # For langgraph
